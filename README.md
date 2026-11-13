@@ -9,12 +9,12 @@ None of the WordPress PHP was carried over. The backup was taken from a compromi
 | Item | Status |
 | --- | --- |
 | Post list: 24 URLs with dates and featured images | Recovered from Rank Math's sitemap cache into `content/recovered-posts.json` |
-| Categories: Golf, Equipment, Golf Equipment, 19th Hole | Recovered |
+| Categories: Golf, Golf Equipment, 19th Hole | Recovered (the empty "Equipment" category was dropped) |
 | Images: 100 originals | Copied to `public/wp-content/uploads/…`, so the old image URLs still work |
 | About 1,096 images from 2022 (Feb, Mar, May, Aug) | **Missing**, because backup part `ad` wasn't available |
 | Article text, excerpts, authors, SEO meta | **Missing**, because the backup has no database dump |
 
-The article text lives in the old MySQL database. Export it and run the importer (see below).
+Because no database export was available, the article text was **newly written** for all 24 posts. It lives in `content/articles/<slug>.html`, and each file starts with a header comment that sets the title, category and excerpt. The articles are factual overviews written without access to the originals, so review them before relying on specific facts. If the old database ever turns up, the importer below can still bring back the original text.
 
 ## Setup
 
@@ -22,7 +22,7 @@ The article text lives in the old MySQL database. Export it and run the importer
 npm install
 cp .env.example .env      # then fill in DATABASE_URL and BETTER_AUTH_SECRET
 npm run db:migrate        # creates tables in Neon
-npm run db:seed           # adds categories and the 24 recovered posts as drafts
+npm run db:seed           # adds categories and publishes the 24 articles
 npm run create-admin -- you@example.com "Your Name"
 npm run dev
 ```
@@ -31,7 +31,11 @@ Sign in at `/sign-in` and manage posts at `/admin`. Public sign-up is turned off
 
 For local development, `DATABASE_URL` can also point at a local Postgres (`postgresql://…@localhost:5432/…`). The app uses node-postgres for localhost URLs and Neon's HTTP driver for everything else.
 
-## Importing the WordPress content
+## Editing the seeded articles
+
+Edit a post in `/admin`, or edit its file in `content/articles/` and run `npm run db:seed -- --force`. Without `--force`, the seed only fills posts whose body is still empty, so admin edits are never overwritten.
+
+## Importing the WordPress content (optional)
 
 Export the old database from your host's phpMyAdmin (Export > SQL) or from WordPress (Tools > Export > Posts). Then run:
 
@@ -57,9 +61,26 @@ npm run import:wp -- ./wordpress-export.xml
 
 ## Deploying (Vercel)
 
-1. Create a Neon project and copy the pooled connection string.
-2. Import the repo into Vercel and set `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `NEXT_PUBLIC_SITE_URL` (the last two set to `https://golfpersonalities.com`).
-3. Run `npm run db:migrate`, `npm run db:seed`, `npm run create-admin` and `npm run import:wp` once against the production `DATABASE_URL`.
+The build itself doesn't need a database, so it succeeds even before the variables are set. Pages that read posts need them at runtime.
+
+1. Create a Neon project and copy the **pooled** connection string (Neon console > Connect).
+2. In Vercel, go to Settings > Environment Variables and add these for Production (and Preview if you use it):
+
+   | Variable | Value |
+   | --- | --- |
+   | `DATABASE_URL` | The Neon pooled connection string |
+   | `BETTER_AUTH_SECRET` | A random string from `openssl rand -base64 32` |
+   | `BETTER_AUTH_URL` | `https://golfpersonalities.com` |
+   | `NEXT_PUBLIC_SITE_URL` | `https://golfpersonalities.com` |
+
+3. Redeploy so the variables take effect.
+4. From your computer, with `DATABASE_URL` in `.env` set to the same Neon URL, run once:
+
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   npm run create-admin -- you@example.com "Your Name"
+   ```
 
 ## Scripts
 
@@ -68,6 +89,6 @@ npm run import:wp -- ./wordpress-export.xml
 | `npm run typecheck` | Generates route types and runs `tsc` |
 | `npm run db:generate` | Creates a migration after schema changes |
 | `npm run db:migrate` | Applies migrations |
-| `npm run db:seed` | Seeds categories and recovered post drafts |
+| `npm run db:seed` | Seeds categories and the articles in `content/articles/` (`--force` overwrites) |
 | `npm run create-admin` | Creates or resets an admin user (reads the password from `ADMIN_PASSWORD` or prompts for it) |
 | `npm run import:wp` | Imports a WordPress `.sql` or `.xml` export |
