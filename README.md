@@ -74,7 +74,8 @@ The build itself doesn't need a database, so it succeeds even before the variabl
    | `NEXT_PUBLIC_SITE_URL` | `https://golfpersonalities.com` |
 
 3. Redeploy so the variables take effect.
-4. From your computer, with `DATABASE_URL` in `.env` set to the same Neon URL, run once:
+4. Deploy. When `DATABASE_URL` is set, Vercel's build (`npm run vercel-build`) applies any new migrations and runs the seed before `next build`. The seed only fills posts that are empty, so it never overwrites edits made in the admin.
+5. Create an admin from your computer, with `DATABASE_URL` in `.env` set to the same Neon URL. You can also run the first two commands by hand if you prefer:
 
    ```bash
    npm run db:migrate
