@@ -75,7 +75,8 @@ The build itself doesn't need a database, so it succeeds even before the variabl
 
 3. Redeploy so the variables take effect.
 4. Deploy. When `DATABASE_URL` is set, Vercel's build (`npm run vercel-build`) applies any new migrations and runs the seed before `next build`. The seed only fills posts that are empty, so it never overwrites edits made in the admin.
-5. Create an admin from your computer, with `DATABASE_URL` in `.env` set to the same Neon URL. You can also run the first two commands by hand if you prefer:
+5. Create the admin account: open `/setup` on the live site and choose an email and password. The page only works until the first admin exists, then it returns 404. To restrict it to one address, set `ADMIN_EMAIL` in Vercel. Do this right after deploying.
+6. Alternatively, create an admin from your computer, with `DATABASE_URL` in `.env` set to the same Neon URL. You can also run the first two commands by hand if you prefer:
 
    ```bash
    npm run db:migrate
